@@ -2,7 +2,7 @@ version: '3.9'
 
 services:
   django:
-    image: checkmate-django:latest
+    image: checkmate-django-amd64:V1.2
     env_file:
       - .env
     volumes:
@@ -12,7 +12,7 @@ services:
       - db
 
   nginx:
-    image: checkmate-nginx:latest
+    image: checkmate-nginx:V1
     ports:
       - "80:80"
     volumes:
@@ -39,9 +39,19 @@ services:
       - "6379:6379"
   
   celery:
-    image: checkmate-django:latest
+    image: checkmate-django:V3
     container_name: celery
     command: celery -A CheckMate worker -l info
+    env_file:
+      - .env
+    depends_on:
+      - django
+      - redis
+  
+  celery-beat:
+    image: checkmate-django:V3
+    container_name: celery-beat
+    command: celery -A CheckMate beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file:
       - .env
     depends_on:
