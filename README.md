@@ -1,161 +1,221 @@
 # CheckMate-Docker
 
-This repository contains the Dockerized version of the CheckMate project.
+This repository contains the **Dockerized version of the CheckMate project**, a Django-based Student Support Cell system.
+The setup now includes automated installation and backup scripts for easy deployment and database safety.
 
-## Prerequisites
+---
 
-Before you begin, ensure you have the following installed:
+## 🧩 Prerequisites
 
-*   [Docker](https://www.docker.com/get-started)
-*   [Docker Compose](https://docs.docker.com/compose/install/)
+Before you begin, ensure you have the following installed on your system:
 
-## Getting Started
+* [Docker](https://www.docker.com/get-started)
+* [Docker Compose](https://docs.docker.com/compose/install/)
+* (Windows only) Command Prompt or PowerShell to run `.bat` scripts
 
-1.  **Clone the repository:**
+---
 
-    ```bash
-    git clone https://github.com/sarthakghere/CheckMate-Docker.git
-    cd CheckMate-Docker
-    ```
+## ⚙️ Getting Started
 
-2.  **Configure the environment:**
-
-    Create a `.env` file from the sample file:
-
-    ```bash
-    cp .env.sample .env
-    ```
-
-    Open the `.env` file and update the following variables:
-
-    *   `SECRET_KEY`: A strong, unique secret key for your Django application. You can generate one using the following commands in a Python shell:
-        ```python
-        from django.core.management.utils import get_random_secret_key
-        print(get_random_secret_key())
-        ```
-    *   `ALLOWED_HOSTS`: A comma-separated list of hosts that can serve the site. For example: `localhost,127.0.0.1,yourdomain.com`.
-    *   `DB_USER`: The username for the MySQL database.
-    *   `DB_PASSWORD`: The password for the MySQL database.
-    *   `EMAIL_HOST_USER`: Your Gmail address for sending emails.
-    *   `EMAIL_HOST_PASSWORD`: Your Gmail app password.
-
-3.  **Download and Load the Docker images:**
-
-    Download the `checkmate-amd64.tar` or `checkmate-arm64.tar` file from the [GitHub releases page](https://github.com/sarthakghere/CheckMate-Docker/releases) of this repository.
-
-    Then, load the appropriate image for your system's architecture:
-
-    *   **For amd64 systems:**
-        ```bash
-        docker load < checkmate-amd64.tar
-        ```
-
-    *   **For arm64 systems:**
-        ```bash
-        docker load < checkmate-arm64.tar
-        ```
-
-4.  **Build and run the application:**
-
-    Choose the appropriate Docker Compose file for your system's architecture:
-
-    *   **For amd64 systems:**
-
-        ```bash
-        docker-compose -f docker-compose-amd64.yaml up --build
-        ```
-
-    *   **For arm64 systems:**
-
-        ```bash
-        docker-compose -f docker-compose-arm64.yaml up --build
-        ```
-
-    The application will be available at `http://localhost`.
-
-5.  **Initial Django Setup**
-    After starting the application, you'll need to run the following commands in a separate terminal to initialize the Django application.
-
-    *   **Apply migrations:**
-        ```bash
-        docker-compose -f <your-compose-file>.yaml exec django python manage.py migrate
-        ```
-        Replace `<your-compose-file>.yaml` with `docker-compose-amd64.yaml` or `docker-compose-arm64.yaml` depending on your system.
-
-    *   **Create a superuser:**
-        ```bash
-        docker-compose -f <your-compose-file>.yaml exec django python manage.py createsuperuser
-        ```
-        You will be prompted to create a username and password for the Django admin interface.
-
-    *   **Collect static files:**
-        ```bash
-        docker-compose -f <your-compose-file>.yaml exec django python manage.py collectstatic --noinput
-        ```
-
-## Application Usage
-
-### Admin Panel
-
-1.  **Access the admin panel:**
-
-    Navigate to `http://localhost/admin` and log in with the superuser credentials you created during the initial setup.
-
-2.  **Add Documents:**
-
-    *   In the admin panel, locate the "Documents" table and click on "Add".
-    *   Fill in the required fields and save the document.
-
-3.  **Add Courses:**
-
-    *   In the admin panel, locate the "Courses" table and click on "Add".
-    *   Fill in the required fields.
-
-4.  **Map Documents to Courses:**
-
-    *   While adding or editing a course, in the "Required Documents" section, select the documents that are required for that course.
-
-### Adding Students in Bulk
-
-You can add students in bulk by uploading an Excel file.
-
-1.  In the admin panel, go to the "Students" section and click on "Add in Bulk".
-2.  Upload an Excel file with the student data. Please follow the defined format for the Excel file.
-
-    **Note:** The specific format for the Excel file is not documented here. Please refer to the application's documentation or source code for the exact format.
-
-### Checking Container Status
-
-To check the status of all running containers, use the following command:
+### 1. Clone the Repository
 
 ```bash
-docker-compose -f <your-compose-file>.yaml ps
+git clone https://github.com/sarthakghere/CheckMate-Docker.git
+cd CheckMate-Docker
 ```
 
-Replace `<your-compose-file>.yaml` with `docker-compose-amd64.yaml` or `docker-compose-arm64.yaml` depending on your system.
+---
 
-## Services
+### 2. Configure Environment Variables
 
-The following services are defined in the Docker Compose files:
+Create a `.env` file from the sample:
 
-*   **`django`**: The Django web application.
-*   **`nginx`**: The nginx web server, which acts as a reverse proxy for the Django application.
-*   **`db`**: The MySQL database.
-*   **`redis`**: The Redis server, used as a message broker for Celery.
-*   **`celery`**: The Celery worker, which runs background tasks.
+```bash
+cp .env.sample .env
+```
 
-## Database
+Open `.env` and update the following values as per your setup:
 
-The MySQL database data is stored in a Docker volume named `db_data`.
+| Variable                                 | Description                                                                                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `SECRET_KEY`                             | Django secret key (generate one via `from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())`) |
+| `ALLOWED_HOSTS`                          | Comma-separated list of allowed hosts (e.g. `localhost,127.0.0.1,yourdomain.com`)                                                     |
+| `DB_USER`, `DB_PASSWORD`                 | MySQL credentials                                                                                                                     |
+| `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD` | Gmail and app password for sending emails                                                                                             |
 
-### Backing up the database
+---
 
-A batch script is provided to back up the database on Windows. To use it, run the following command:
+## 🚀 Automated Installation (Recommended)
+
+To automatically fetch Docker images, start containers, apply migrations, and collect static files — run:
+
+```bash
+setup.bat
+```
+
+This script performs the following:
+
+1. Pulls the latest Docker images for all services.
+2. Stops and removes any existing containers.
+3. Starts the containers in detached mode.
+4. Runs Django `migrate` and `collectstatic` commands.
+5. Displays available migrations for verification.
+
+After completion, your application will be running at:
+
+👉 **[http://localhost](http://localhost)**
+
+---
+
+## 🐋 Docker Compose Configuration
+
+Your setup uses prebuilt Docker images for production:
+
+```yaml
+services:
+  django:
+    image: sarthakghere/checkmate-django:latest
+    env_file:
+      - .env
+    volumes:
+      - ./mediafiles:/app/mediafiles
+      - ./staticfiles:/app/staticfiles
+    depends_on:
+      - db
+
+  nginx:
+    image: sarthakghere/checkmate-nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./staticfiles:/app/staticfiles:ro
+      - ./mediafiles:/app/mediafiles:ro
+    depends_on:
+      - django
+
+  db:
+    image: mysql:8
+    restart: always
+    environment:
+      MYSQL_DATABASE: $DB_NAME
+      MYSQL_ROOT_PASSWORD: $DB_PASSWORD
+    volumes:
+      - db_data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    container_name: redis
+    restart: always
+    ports:
+      - "6379:6379"
+  
+  celery:
+    image: sarthakghere/checkmate-django:latest
+    container_name: celery
+    command: celery -A CheckMate worker -l info
+    env_file:
+      - .env
+    depends_on:
+      - django
+      - redis
+
+  celery-beat:
+    image: sarthakghere/checkmate-django:latest
+    container_name: celery-beat
+    command: celery -A CheckMate beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - .env
+    depends_on:
+      - django
+      - redis
+
+volumes:
+  db_data:
+```
+
+---
+
+## 🧠 First-Time Django Setup
+
+After running `setup.bat` and confirming the containers are up, complete the following inside the Django container:
+
+1. **Create Superuser**
+
+   ```bash
+   docker exec -it checkmate-docker-django-1 python manage.py createsuperuser
+   ```
+
+   Follow the prompts to set email and password.
+
+2. **Access the Admin Panel**
+   Visit **[http://localhost/admin](http://localhost/admin)** and log in using the credentials created above.
+
+3. **Add Documents**
+
+   * Go to **Documents** in the admin panel.
+   * Click **Add Document** and fill in the required fields.
+
+4. **Add Courses**
+
+   * Go to **Courses** and click **Add Course**.
+   * Enter course details (name, code, etc.).
+
+5. **Map Documents to Courses**
+
+   * While adding or editing a course, use the **Required Documents** section to link necessary documents for that course.
+
+Once this initial setup is done, your system is ready to handle student and certificate workflows.
+
+---
+
+## 💾 Database Backup
+
+You can back up your MySQL volume using the provided script:
 
 ```bash
 mysql_backup.bat
 ```
 
-This will create a backup file in `C:\backups\` with a filename like `mydb-YYYY-MM-DD.sql`.
+This script:
 
-**Note:** You may need to create the `C:\backups` directory if it doesn't exist. The script uses the container name `db` as defined in the Docker Compose files.
+* Creates a compressed `.sql` backup of your MySQL Database.
+* Saves it to `C:\CheckMate-Backups\` with a timestamped filename.
+
+Example backup file:
+
+```
+C:\CheckMate-Backups\checkmate-%DATE%.sql
+```
+
+This ensures your data is safely stored regularly.
+
+---
+
+## 🔍 Checking Container Status
+
+To verify that all containers are running:
+
+```bash
+docker-compose ps
+```
+
+You should see services like `django`, `nginx`, `db`, `redis`, `celery`, and `celery-beat` in the list.
+
+---
+
+## 🧹 Maintenance Commands
+
+| Command                  | Description                                  |
+| ------------------------ | -------------------------------------------- |
+| `docker-compose logs -f` | View live logs of all services               |
+| `docker-compose down`    | Stop and remove containers                   |
+| `docker-compose up -d`   | Start containers in detached mode            |
+| `docker system prune`    | Remove unused Docker data (use with caution) |
+
+---
+
+## 🏁 Done!
+
+Your CheckMate Docker environment is now ready to use.
+Visit **[http://localhost](http://localhost)** to start using the system.
