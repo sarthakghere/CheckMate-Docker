@@ -46,5 +46,15 @@ services:
       - django
       - redis
 
+  celery-beat:
+    image: sarthakghere/checkmate-django:latest
+    container_name: celery
+    command: celery -A CheckMate beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file:
+      - .env
+    depends_on:
+      - django
+      - redis
+
 volumes:
   db_data:
