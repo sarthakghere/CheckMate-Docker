@@ -1,8 +1,6 @@
-version: '3.9'
-
 services:
   django:
-    image: checkmate-django:latest
+    image: sarthakghere/checkmate-django:latest
     env_file:
       - .env
     volumes:
@@ -12,7 +10,7 @@ services:
       - db
 
   nginx:
-    image: checkmate-nginx:latest
+    image: sarthakghere/checkmate-nginx:latest
     ports:
       - "80:80"
     volumes:
@@ -39,7 +37,7 @@ services:
       - "6379:6379"
   
   celery:
-    image: checkmate-django:latest
+    image: sarthakghere/checkmate-django:latest
     container_name: celery
     command: celery -A CheckMate worker -l info
     env_file:
