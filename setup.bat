@@ -1,84 +1,78 @@
 @echo off
 setlocal
 
-:handle_error
-    echo.
-    echo ***************************************************
-    echo ^| An error occurred. Aborting script.
-    echo ***************************************************
-    echo.
-    exit /b 1
-
-echo "--- Setting up backup variables ---"
+rem -----------------------------
+rem Configuration
+rem -----------------------------
+set "VOLUME_NAME=checkmate-docker_db_data"
 set "BACKUP_DIR=C:\CheckMate-Backups"
-set "TIMESTAMP=%DATE:~10,4%-%DATE:~4,2%-%DATE:~7,2%_%TIME:~0,2%%TIME:~3,2%"
-set "TIMESTAMP=%TIMESTAMP: =0%"
-set "BACKUP_FILENAME=checkmate-docker_db_data_backup_%TIMESTAMP%.tar.gz"
-set "BACKUP_FILE=%BACKUP_DIR%\%BACKUP_FILENAME%"
 
-echo "--- Creating database volume backup ---"
-if not exist "%BACKUP_DIR%" (
-    echo "Backup directory not found. Creating: %BACKUP_DIR%"
-    mkdir "%BACKUP_DIR%"
+if not exist "%BACKUP_DIR%" mkdir "%BACKUP_DIR%" >nul 2>&1
+
+rem -----------------------------
+rem Check if volume exists
+rem -----------------------------
+docker volume inspect %VOLUME_NAME% >nul 2>&1
+if %errorlevel% neq 0 (
+    echo =============================================================
+    echo Performing FIRST INSTALLATION
+    echo =============================================================
+    docker compose up -d
+    docker exec -it checkmate-docker-django-1 python manage.py collectstatic
+    docker exec -it checkmate-docker-django-1 python manage.py show migrations
+    docker exec -it checkmate-docker-django-1 python manage.py migrate
+    docker exec -it checkmate-docker-django-1 python manage.py createsuperuser
     if %errorlevel% neq 0 (
-        echo "ERROR: Failed to create backup directory."
-        call :handle_error
+        echo ERROR: Docker compose up failed.
+        pause
+        exit /b 1
     )
+    echo Installation completed successfully.
+    pause
+    exit /b 0
 )
 
-echo "Running backup container..."
-docker run --rm ^
-  -v checkmate-docker_db_data:/data ^
-  -v "%BACKUP_DIR%":/backup ^
-  alpine sh -c "tar czf /backup/%BACKUP_FILENAME% -C /data ."
+rem -----------------------------
+rem UPDATE
+rem -----------------------------
+echo =============================================================
+echo Performing UPDATE
+echo =============================================================
 
+rem --- Backup database volume ---
+for /f "tokens=1-4 delims=/:. " %%a in ("%DATE% %TIME%") do (
+    set TIMESTAMP=%%d%%b%%c_%%a%%b
+)
+set "BACKUP_FILE=%BACKUP_DIR%\%VOLUME_NAME%_backup_%TIMESTAMP%.tar.gz"
+
+echo Backing up DB volume to %BACKUP_FILE% ...
+docker run --rm -v %VOLUME_NAME%:/data -v "%BACKUP_DIR%":/backup alpine sh -c "tar czf /backup/%VOLUME_NAME%_backup_%TIMESTAMP%.tar.gz -C /data ."
 if %errorlevel% neq 0 (
-    echo "ERROR: Docker backup command failed."
-    call :handle_error
+    echo ERROR: Backup failed.
+    pause
+    exit /b 1
 )
-echo "Database volume backup created at %BACKUP_FILE%"
-echo.
+echo Backup completed.
 
-echo "--- Stopping and removing containers ---"
-docker-compose down
+rem --- Shutdown containers and remove images ---
+docker compose down --rmi all
 if %errorlevel% neq 0 (
-    echo "ERROR: 'docker-compose down' failed."
-    call :handle_error
+    echo ERROR: Docker compose down failed.
+    pause
+    exit /b 1
 )
-echo.
 
-echo "--- Building and starting containers in detached mode ---"
-docker-compose up -d --build
+rem --- Start containers ---
+docker compose up -d
+docker exec -it checkmate-docker-django-1 python manage.py collectstatic
+docker exec -it checkmate-docker-django-1 python manage.py show migrations
+docker exec -it checkmate-docker-django-1 python manage.py migrate
 if %errorlevel% neq 0 (
-    echo "ERROR: 'docker-compose up --build' failed."
-    call :handle_error
-)
-echo.
-
-echo "Waiting for services to stabilize..."
-timeout /t 10 /nobreak > nul
-
-echo "--- Collecting static files in container ---"
-docker exec checkmate-docker-django-1 python manage.py collectstatic --no-input
-if %errorlevel% neq 0 (
-    echo "ERROR: Failed to collect static files."
-    call :handle_error
-)
-echo.
-
-echo "--- Applying New Migrations ---"
-docker exec checkmate-docker-django-1 python manage.py showmigrations
-if %errorlevel% neq 0 (
-    echo "WARNING: 'showmigrations' command failed. Continuing anyway."
+    echo ERROR: Docker compose up failed.
+    pause
+    exit /b 1
 )
 
-docker exec checkmate-docker-django-1 python manage.py migrate
-if %errorlevel% neq 0 (
-    echo "ERROR: Failed to apply migrations."
-    call :handle_error
-)
-echo.
-
-echo "--- Done! ---"
+echo Update completed successfully.
 pause
-endlocal
+exit /b 0
