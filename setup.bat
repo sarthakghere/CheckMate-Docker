@@ -19,7 +19,7 @@ if %errorlevel% neq 0 (
     echo =============================================================
     docker compose up -d
     docker exec -it checkmate-docker-django-1 python manage.py collectstatic
-    docker exec -it checkmate-docker-django-1 python manage.py show migrations
+    docker exec -it checkmate-docker-django-1 python manage.py showmigrations
     docker exec -it checkmate-docker-django-1 python manage.py migrate
     docker exec -it checkmate-docker-django-1 python manage.py createsuperuser
     if %errorlevel% neq 0 (
@@ -65,7 +65,7 @@ if %errorlevel% neq 0 (
 rem --- Start containers ---
 docker compose up -d
 docker exec -it checkmate-docker-django-1 python manage.py collectstatic
-docker exec -it checkmate-docker-django-1 python manage.py show migrations
+docker exec -it checkmate-docker-django-1 python manage.py showmigrations
 docker exec -it checkmate-docker-django-1 python manage.py migrate
 if %errorlevel% neq 0 (
     echo ERROR: Docker compose up failed.
